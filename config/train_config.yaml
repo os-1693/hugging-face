@@ -1,0 +1,51 @@
+# Hugging Face モデル学習設定ファイル
+
+# シード値
+seed: 42
+
+# モデル設定
+model:
+  name: "bert-base-uncased"  # 使用するモデル名
+  task_type: "sequence_classification"  # タスクタイプ: sequence_classification, token_classification, qa
+  num_labels: 2  # ラベル数（分類タスクの場合）
+  max_length: 512  # 最大シーケンス長
+  pretrained: true  # 事前学習済みモデルを使用するか
+  config_overrides:
+    # モデルの設定をオーバーライドする場合はここに記述
+    # dropout: 0.1
+    # attention_dropout: 0.1
+
+# データセット設定
+dataset:
+  name: "imdb"  # Hugging Face Hubのデータセット名
+  subset: null  # サブセット名（必要な場合）
+  # カスタムデータセットを使用する場合
+  # custom:
+  #   train_path: "data/train.csv"
+  #   validation_path: "data/validation.csv"
+  #   test_path: "data/test.csv"
+
+# 学習設定
+training:
+  output_dir: "./models/fine-tuned"  # モデルの保存先
+  num_epochs: 3  # エポック数
+  batch_size: 16  # 訓練バッチサイズ
+  eval_batch_size: 32  # 評価バッチサイズ
+  learning_rate: 2.0e-5  # 学習率
+  weight_decay: 0.01  # 重み減衰
+  warmup_steps: 500  # ウォームアップステップ数
+  logging_dir: "./logs"  # ログの保存先
+  logging_steps: 100  # ログ記録の頻度
+  save_total_limit: 3  # 保存するチェックポイントの最大数
+  fp16: true  # 混合精度学習を使用するか（GPUが利用可能な場合）
+  report_to: ["tensorboard"]  # レポート先: tensorboard, wandb など
+  early_stopping: true  # 早期停止を使用するか
+  early_stopping_patience: 3  # 早期停止の忍耐力
+
+# データ処理設定
+num_proc: 4  # 並列処理数
+
+# 評価設定
+evaluation:
+  metric: "accuracy"  # 評価メトリクス
+  # その他のメトリクス: f1, precision, recall など
