@@ -67,7 +67,7 @@ uv pip install -e .
 uv pip install -r requirements.txt
 
 # デモを実行
-python demo.py
+uv run python demo.py
 ```
 
 ### 方法2: 従来のpipを使う
