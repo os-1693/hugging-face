@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from typing import Tuple, Dict, Optional
-import pickle
+import joblib
 
 
 class DataPreprocessor:
@@ -60,18 +60,18 @@ class DataPreprocessor:
 
         for _, user in user_profiles.iterrows():
             for _, seat in seat_features.iterrows():
-                # ユーザーの好みと座席の特性の適合度を計算
+                # ユーザーの好みと座席の特性の適合度を計算（ゼロ除算対策）
                 temp_diff = abs(user['preferred_temperature'] - seat['temperature_mean'])
-                temp_score = max(0, 1 - temp_diff / user['temperature_tolerance'])
+                temp_score = max(0, 1 - temp_diff / max(user['temperature_tolerance'], 1e-6))
 
                 humidity_diff = abs(user['preferred_humidity'] - seat['humidity_mean'])
-                humidity_score = max(0, 1 - humidity_diff / user['humidity_tolerance'])
+                humidity_score = max(0, 1 - humidity_diff / max(user['humidity_tolerance'], 1e-6))
 
                 light_diff = abs(user['preferred_illuminance'] - seat['illuminance_mean'])
-                light_score = max(0, 1 - light_diff / user['illuminance_tolerance'])
+                light_score = max(0, 1 - light_diff / max(user['illuminance_tolerance'], 1e-6))
 
                 noise_diff = max(0, seat['noise_level_mean'] - user['max_acceptable_noise'])
-                noise_score = max(0, 1 - noise_diff / user['noise_tolerance'])
+                noise_score = max(0, 1 - noise_diff / max(user['noise_tolerance'], 1e-6))
 
                 # 特徴ベクトルを作成
                 feature_dict = {
@@ -213,15 +213,13 @@ class DataPreprocessor:
         return X, feature_cols
 
     def save(self, filepath: str):
-        """前処理器を保存"""
-        with open(filepath, 'wb') as f:
-            pickle.dump(self, f)
+        """前処理器を保存（joblibを使用）"""
+        joblib.dump(self, filepath)
 
     @classmethod
     def load(cls, filepath: str) -> 'DataPreprocessor':
-        """前処理器を読み込み"""
-        with open(filepath, 'rb') as f:
-            return pickle.load(f)
+        """前処理器を読み込み（joblibを使用）"""
+        return joblib.load(filepath)
 
 
 def split_data(

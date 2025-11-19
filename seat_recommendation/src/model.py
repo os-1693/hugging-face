@@ -7,7 +7,7 @@
 import numpy as np
 import pandas as pd
 from typing import List, Tuple, Optional, Dict
-import pickle
+import joblib
 from abc import ABC, abstractmethod
 
 # 機械学習ライブラリ
@@ -95,15 +95,13 @@ class BaseSeatRecommender(ABC):
         return importance_df
 
     def save(self, filepath: str):
-        """モデルを保存"""
-        with open(filepath, 'wb') as f:
-            pickle.dump(self, f)
+        """モデルを保存（joblibを使用）"""
+        joblib.dump(self, filepath)
 
     @classmethod
     def load(cls, filepath: str) -> 'BaseSeatRecommender':
-        """モデルを読み込み"""
-        with open(filepath, 'rb') as f:
-            return pickle.load(f)
+        """モデルを読み込み（joblibを使用）"""
+        return joblib.load(filepath)
 
 
 class RandomForestRecommender(BaseSeatRecommender):

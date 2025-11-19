@@ -224,39 +224,99 @@ class UserDataGenerator:
 
         return pd.DataFrame(users_data)
 
-    def generate_user_ratings(self, num_ratings: int, num_seats: int) -> pd.DataFrame:
+    def generate_user_ratings(
+        self,
+        num_ratings: int,
+        num_seats: int,
+        user_profiles: pd.DataFrame,
+        seat_info: pd.DataFrame,
+        env_data: pd.DataFrame
+    ) -> pd.DataFrame:
         """
-        ユーザーの座席評価履歴を生成
+        ユーザーの座席評価履歴を生成（現実的な評価を生成）
 
         Args:
             num_ratings: 評価数
             num_seats: 座席数
+            user_profiles: ユーザープロファイル
+            seat_info: 座席情報
+            env_data: 環境データ
 
         Returns:
             評価履歴のDataFrame
         """
         ratings_data = []
 
+        # 環境データの集約（座席ごとの平均）
+        env_agg = env_data.groupby('seat_id').agg({
+            'temperature': 'mean',
+            'humidity': 'mean',
+            'illuminance': 'mean',
+            'noise_level': 'mean',
+            'co2_level': 'mean'
+        }).reset_index()
+
+        # 座席情報とマージ
+        seat_features = seat_info.merge(env_agg, on='seat_id')
+
         for _ in range(num_ratings):
             user_id = np.random.randint(0, self.num_users)
             seat_id = np.random.randint(0, num_seats)
 
-            # 評価スコア（1-5）
-            # 実際にはユーザーの好みと座席の特性に基づいて決定されるべき
-            rating = np.random.randint(1, 6)
+            user = user_profiles[user_profiles['user_id'] == user_id].iloc[0]
+            seat = seat_features[seat_features['seat_id'] == seat_id].iloc[0]
 
-            # 快適性の詳細評価（1-5）
-            temperature_rating = np.random.randint(1, 6)
-            noise_rating = np.random.randint(1, 6)
-            light_rating = np.random.randint(1, 6)
+            # 現実的な評価を計算（ユーザーの好みと座席特性に基づく）
+            # 温度の適合度（0-1）
+            temp_diff = abs(user['preferred_temperature'] - seat['temperature'])
+            temp_score = max(0, 1 - temp_diff / max(user['temperature_tolerance'] * 3, 1e-6))
+
+            # 湿度の適合度
+            humidity_diff = abs(user['preferred_humidity'] - seat['humidity'])
+            humidity_score = max(0, 1 - humidity_diff / max(user['humidity_tolerance'] * 2, 1e-6))
+
+            # 照度の適合度
+            light_diff = abs(user['preferred_illuminance'] - seat['illuminance'])
+            light_score = max(0, 1 - light_diff / max(user['illuminance_tolerance'] * 2, 1e-6))
+
+            # 騒音の適合度
+            noise_diff = max(0, seat['noise_level'] - user['max_acceptable_noise'])
+            noise_score = max(0, 1 - noise_diff / max(user['noise_tolerance'] * 3, 1e-6))
+
+            # 好みの一致度（窓際、静かなエリアなど）
+            pref_match = 0
+            if user['prefers_window'] == seat['is_window']:
+                pref_match += 0.25
+            if user['prefers_quiet'] == seat['quiet_area']:
+                pref_match += 0.25
+            if user['needs_monitor'] == seat['has_monitor']:
+                pref_match += 0.25
+            if user['prefers_standing_desk'] == seat['has_standing_desk']:
+                pref_match += 0.25
+
+            # 総合評価（1-5スケール）
+            # 各要素を加重平均
+            base_score = (
+                temp_score * 0.3 +
+                humidity_score * 0.15 +
+                light_score * 0.15 +
+                noise_score * 0.25 +
+                pref_match * 0.15
+            )
+
+            # 1-5の範囲に変換し、ノイズを追加
+            overall_rating = np.clip(base_score * 5 + np.random.normal(0, 0.3), 1, 5)
+            temperature_rating = np.clip(temp_score * 5 + np.random.normal(0, 0.4), 1, 5)
+            noise_rating = np.clip(noise_score * 5 + np.random.normal(0, 0.4), 1, 5)
+            light_rating = np.clip(light_score * 5 + np.random.normal(0, 0.4), 1, 5)
 
             ratings_data.append({
                 'user_id': user_id,
                 'seat_id': seat_id,
-                'overall_rating': rating,
-                'temperature_rating': temperature_rating,
-                'noise_rating': noise_rating,
-                'light_rating': light_rating,
+                'overall_rating': round(overall_rating, 2),
+                'temperature_rating': round(temperature_rating, 2),
+                'noise_rating': round(noise_rating, 2),
+                'light_rating': round(light_rating, 2),
                 'timestamp': np.random.randint(0, 1000)
             })
 
@@ -296,10 +356,12 @@ def generate_all_data(
     # ユーザーデータ生成
     user_gen = UserDataGenerator(num_users)
     user_profiles = user_gen.generate_user_profiles()
-    user_ratings = user_gen.generate_user_ratings(num_ratings, num_seats)
+    user_ratings = user_gen.generate_user_ratings(
+        num_ratings, num_seats, user_profiles, seat_info, env_data
+    )
 
     print(f"✓ ユーザープロファイル: {len(user_profiles)} ユーザー")
-    print(f"✓ 評価データ: {len(user_ratings)} 評価")
+    print(f"✓ 評価データ: {len(user_ratings)} 評価（現実的な適合度に基づく）")
 
     # データ保存
     import os

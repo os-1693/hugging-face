@@ -38,20 +38,58 @@
 
 ## 5分でスタート（超簡単モード）
 
-### 1. 必要なライブラリをインストール
+### 方法1: uvを使う（推奨・高速）
+
+[uv](https://github.com/astral-sh/uv)は、Rustで書かれた超高速なPythonパッケージマネージャーです。
+
+#### uvのインストール
+
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# pipでインストール
+pip install uv
+```
+
+#### プロジェクトのセットアップと実行
 
 ```bash
 cd seat_recommendation
-pip install -r requirements.txt
-```
 
-### 2. デモを実行
+# 依存パッケージをインストール（pipの10-100倍速い！）
+uv pip install -e .
 
-```bash
+# または、requirements.txtから
+uv pip install -r requirements.txt
+
+# デモを実行
 python demo.py
 ```
 
-これだけで、以下の全てを体験できます：
+### 方法2: 従来のpipを使う
+
+```bash
+cd seat_recommendation
+
+# 仮想環境を作成（推奨）
+python -m venv venv
+source venv/bin/activate  # Mac/Linux
+# または venv\Scripts\activate  # Windows
+
+# 必要なライブラリをインストール
+pip install -r requirements.txt
+
+# デモを実行
+python demo.py
+```
+
+### デモで体験できること
+
+以下の全てを自動で実行します：
 - サンプルデータの自動生成
 - 機械学習モデルの訓練
 - 座席の推薦
@@ -361,7 +399,9 @@ A: 以下を試してください：
 - **pandas**: データ処理
 - **numpy**: 数値計算
 - **scikit-learn**: 機械学習
+- **joblib**: モデルの保存・読み込み（安全性向上）
 - **PyYAML**: 設定ファイル
+- **uv**: 高速パッケージマネージャー（オプション）
 
 ## 学習の流れ
 
