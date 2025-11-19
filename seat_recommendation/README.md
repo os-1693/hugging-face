@@ -100,29 +100,31 @@ python demo.py
 
 ```
 seat_recommendation/
-├── README.md                    # このファイル
-├── pyproject.toml               # プロジェクト設定（uv対応）
-├── requirements.txt             # 依存パッケージ
-├── demo.py                      # デモスクリプト（初心者向け）
-├── optimize_assignment.py       # 座席配置最適化スクリプト
+├── README.md                       # このファイル
+├── pyproject.toml                  # プロジェクト設定（uv対応）
+├── requirements.txt                # 依存パッケージ
+├── demo.py                         # デモスクリプト（初心者向け）
+├── optimize_assignment.py          # 座席配置最適化スクリプト
+├── analyze_seat_properties.py      # 座席性質分析スクリプト
 ├── config/
-│   └── config.yaml              # 設定ファイル
-├── data/                        # データ保存ディレクトリ
-│   ├── seat_info.csv            # 座席情報（生成後）
-│   ├── environment_data.csv     # 環境データ（生成後）
-│   ├── user_profiles.csv        # ユーザープロファイル（生成後）
-│   └── user_ratings.csv         # 評価データ（生成後）
+│   └── config.yaml                 # 設定ファイル
+├── data/                           # データ保存ディレクトリ
+│   ├── seat_info.csv               # 座席情報（生成後）
+│   ├── environment_data.csv        # 環境データ（生成後）
+│   ├── user_profiles.csv           # ユーザープロファイル（生成後）
+│   └── user_ratings.csv            # 評価データ（生成後）
 ├── src/
 │   ├── __init__.py
-│   ├── data_generator.py        # データ生成
-│   ├── preprocessor.py          # データ前処理
-│   ├── model.py                 # 機械学習モデル
-│   ├── optimizer.py             # 座席配置最適化
-│   ├── train.py                 # 訓練スクリプト
-│   └── inference.py             # 推論スクリプト
-├── models/                      # 訓練済みモデル保存先
-├── output/                      # 実験結果保存先
-└── notebooks/                   # Jupyterノートブック用
+│   ├── data_generator.py           # データ生成
+│   ├── preprocessor.py             # データ前処理
+│   ├── model.py                    # 機械学習モデル
+│   ├── optimizer.py                # 座席配置最適化
+│   ├── seat_property_analyzer.py   # 座席性質分析
+│   ├── train.py                    # 訓練スクリプト
+│   └── inference.py                # 推論スクリプト
+├── models/                         # 訓練済みモデル保存先
+├── output/                         # 実験結果保存先
+└── notebooks/                      # Jupyterノートブック用
 ```
 
 ## 詳細な使い方
@@ -307,6 +309,126 @@ assignments = optimizer.optimize_greedy(
     priority_users=[0, 1]  # ユーザー0と1を優先的に割り当て
 )
 ```
+
+### ステップ5: 座席性質分析（どんな座席を増やすべきか）
+
+座席の性質を分析して、ユーザーの需要に対してどの性質の座席が不足しているかを診断し、どんな座席を増やすべきか推奨します。
+
+#### 基本的な使い方
+
+```bash
+python analyze_seat_properties.py
+```
+
+デフォルトでは、`data/seat_info.csv`と`data/user_profiles.csv`を読み込んで分析します。
+
+#### カスタムデータを使う
+
+```bash
+# カスタムディレクトリを指定
+python analyze_seat_properties.py --data-dir my_data
+
+# 個別のファイルを指定
+python analyze_seat_properties.py --seat-info data/seat_info.csv --user-profiles data/user_profiles.csv
+
+# 推奨件数を変更（デフォルト: 3）
+python analyze_seat_properties.py --top 5
+```
+
+#### データがない場合
+
+```bash
+# データを自動生成してから分析
+python analyze_seat_properties.py --generate-data
+```
+
+#### Pythonコードで分析
+
+```python
+from src.seat_property_analyzer import SeatPropertyAnalyzer
+import pandas as pd
+
+# データ読み込み
+seat_info = pd.read_csv("data/seat_info.csv")
+user_profiles = pd.read_csv("data/user_profiles.csv")
+
+# 分析器を作成
+analyzer = SeatPropertyAnalyzer(seat_info, user_profiles)
+
+# 全性質を分析
+analyses = analyzer.analyze_all_properties()
+
+# 推奨を生成
+recommendations = analyzer.generate_recommendations(analyses, top_n=3)
+
+# レポート表示
+analyzer.print_analysis_report(analyses)
+analyzer.print_recommendations(recommendations)
+```
+
+#### 分析される座席性質
+
+| 性質 | 説明 | 対応するユーザー好み |
+|-----|------|-------------------|
+| 窓際座席 | 列0または列9の座席 | prefers_window |
+| 空調近く | 行0または行4の座席 | 温度敏感ユーザー |
+| 出入口近く | 行4の右端座席 | （一般的に避けられる） |
+| 静かなエリア | 行0-1の座席 | prefers_quiet |
+| モニター付き | モニター設備あり | needs_monitor |
+| スタンディングデスク | 立ち机設備あり | prefers_standing_desk |
+
+#### 分析結果の見方
+
+分析では以下の情報が表示されます：
+
+1. **供給（現在の座席数と割合）**: 現在の座席配置で各性質を持つ座席の数
+2. **需要（ユーザー数と割合）**: その性質を好むユーザーの数
+3. **ギャップ**: 需要と供給の差（プラスは不足）
+4. **不足度スコア**: 需要の大きさとギャップを考慮した不足の深刻度（0-100）
+5. **優先度**: 不足度に基づく増設の優先順位
+
+#### 出力例
+
+```
+================================================================================
+座席性質分析レポート
+================================================================================
+
+総座席数: 50
+総ユーザー数: 200
+
+--------------------------------------------------------------------------------
+座席性質ごとの需要供給分析
+--------------------------------------------------------------------------------
+性質              供給           需要           ギャップ       不足度      優先度
+--------------------------------------------------------------------------------
+窓際座席            10席 (20.0%)  98人 (49.0%)  +88席       29.0     1
+出入口近く           2席 (4.0%)    20人 (10.0%)  +18席       6.0      2
+モニター付き          32席 (64.0%)  129人 (64.5%) +97席       0.5      3
+空調近く            20席 (40.0%)  75人 (37.5%)  +55席       0.0      4
+静かなエリア          20席 (40.0%)  80人 (40.0%)  +60席       0.0      5
+スタンディングデスク      16席 (32.0%)  39人 (19.5%)  +23席       0.0      6
+--------------------------------------------------------------------------------
+
+================================================================================
+座席増設の推奨
+================================================================================
+
+【優先度 1】 窓際座席
+  理由: 需要49.0%に対して供給20.0%と不足しています。88席分の需要が満たされていません。
+  現在: 10席
+  需要: 98人
+  不足度スコア: 29.0
+  推奨増設数: 61席
+  目標: 71席
+```
+
+#### 活用方法
+
+1. **オフィスレイアウトの改善**: どの性質の座席を増やすべきか判断
+2. **新規オフィスの設計**: ユーザーの好みに基づいた座席配置の計画
+3. **設備投資の優先順位付け**: モニターやスタンディングデスクの追加台数の決定
+4. **満足度の向上**: 不足している座席性質を補うことで全体満足度を向上
 
 ## サポートされているモデル
 
