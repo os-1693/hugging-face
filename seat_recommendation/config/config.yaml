@@ -1,0 +1,31 @@
+# 座席推薦システム設定ファイル
+
+# データ設定
+data:
+  num_seats: 50                    # 座席数
+  num_users: 200                   # ユーザー数
+  num_timestamps: 1000             # 環境データのタイムスタンプ数
+  num_ratings: 5000                # 評価データ数
+  data_dir: seat_recommendation/data           # データ保存ディレクトリ
+  generate_new: false              # 新規データ生成フラグ
+
+# モデル設定
+model:
+  type: random_forest              # モデルタイプ: random_forest, gradient_boosting, neural_network, linear
+  params:
+    # ランダムフォレストのパラメータ
+    n_estimators: 100              # 木の数（多いほど精度向上、訓練時間増）
+    max_depth: 10                  # 木の深さ（深いほど複雑なパターンを学習）
+    min_samples_split: 2           # ノード分割の最小サンプル数
+    random_state: 42               # 再現性のためのシード値
+
+# 訓練設定
+training:
+  train_ratio: 0.7                 # 訓練データの割合
+  val_ratio: 0.15                  # 検証データの割合（残りがテストデータ）
+  random_seed: 42                  # データ分割のシード値
+
+# 出力設定
+output:
+  model_dir: seat_recommendation/models        # モデル保存ディレクトリ
+  output_dir: seat_recommendation/output       # 結果出力ディレクトリ
