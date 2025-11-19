@@ -1,0 +1,5 @@
+# This directory will contain generated data files.
+# Run the following command to generate sample data:
+#   python src/data_generator.py
+# Or use the demo script:
+#   python demo.py
