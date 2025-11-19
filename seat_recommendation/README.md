@@ -101,8 +101,10 @@ python demo.py
 ```
 seat_recommendation/
 ├── README.md                    # このファイル
+├── pyproject.toml               # プロジェクト設定（uv対応）
 ├── requirements.txt             # 依存パッケージ
 ├── demo.py                      # デモスクリプト（初心者向け）
+├── optimize_assignment.py       # 座席配置最適化スクリプト
 ├── config/
 │   └── config.yaml              # 設定ファイル
 ├── data/                        # データ保存ディレクトリ
@@ -115,6 +117,7 @@ seat_recommendation/
 │   ├── data_generator.py        # データ生成
 │   ├── preprocessor.py          # データ前処理
 │   ├── model.py                 # 機械学習モデル
+│   ├── optimizer.py             # 座席配置最適化
 │   ├── train.py                 # 訓練スクリプト
 │   └── inference.py             # 推論スクリプト
 ├── models/                      # 訓練済みモデル保存先
@@ -202,6 +205,107 @@ recommendations = recommend_seats(
 )
 
 print(recommendations)
+```
+
+### ステップ4: 座席配置最適化（複数ユーザーの同時割り当て）
+
+複数のユーザーに対して、全体の満足度を最大化する座席割り当てを行います。
+
+#### ハンガリアン法（全体最適）
+
+全ユーザーの満足度合計を最大化します。
+
+```bash
+python optimize_assignment.py --num-users 30 --method hungarian
+```
+
+#### 貪欲法（高速）
+
+各ユーザーに順番に最良の座席を割り当てます（計算が高速）。
+
+```bash
+python optimize_assignment.py --num-users 30 --method greedy
+```
+
+#### 複数手法の比較
+
+ハンガリアン法と貪欲法を比較します。
+
+```bash
+python optimize_assignment.py --num-users 30 --method compare
+```
+
+#### オプション設定
+
+```bash
+# 既に使用中の座席を指定
+python optimize_assignment.py --num-users 30 --occupied-seats 0 5 10 15
+
+# 結果をJSONで保存
+python optimize_assignment.py --num-users 30 --method hungarian --output output/assignment.json
+```
+
+#### Pythonコードで最適化
+
+```python
+from src.model import BaseSeatRecommender
+from src.preprocessor import DataPreprocessor
+from src.optimizer import SeatAssignmentOptimizer, visualize_assignment
+
+# モデルと前処理器を読み込み
+recommender = BaseSeatRecommender.load("models/seat_recommender.pkl")
+preprocessor = DataPreprocessor.load("models/preprocessor.pkl")
+
+# 特徴量を準備
+features_df = preprocessor.create_features(
+    user_profiles, seat_info, env_data, user_ratings=None
+)
+
+# 最適化器を作成
+optimizer = SeatAssignmentOptimizer(recommender)
+
+# ハンガリアン法で最適割り当て
+assignments = optimizer.optimize_hungarian(
+    user_ids=[0, 1, 2, 3, 4],  # 対象ユーザー
+    features_df=features_df,
+    occupied_seats={10, 15, 20}  # 使用中の座席
+)
+
+# 結果を視覚化
+print(visualize_assignment(assignments, num_rows=5, num_cols=10))
+
+# 統計情報
+total_score = sum(a['predicted_score'] for a in assignments.values())
+print(f"合計満足度: {total_score:.2f}")
+```
+
+#### 最適化アルゴリズムの比較
+
+| アルゴリズム | 特徴 | 計算時間 | 最適性 | おすすめ用途 |
+|------------|------|---------|--------|------------|
+| **ハンガリアン法** | 全体最適を保証 | O(n³) | 最適 | 30人以下の小規模 |
+| **貪欲法** | 高速だが局所最適 | O(n²) | 準最適 | 100人以上の大規模 |
+
+#### 制約条件のサポート
+
+- **使用中の座席**: `--occupied-seats` で指定
+- **予約済み割り当て**: Pythonコードで `reserved_assignments` を指定
+- **優先ユーザー**: 貪欲法で `priority_users` を指定
+
+```python
+# 予約済み割り当ての例
+assignments = optimizer.optimize_hungarian(
+    user_ids=[0, 1, 2, 3, 4],
+    features_df=features_df,
+    reserved_assignments={0: 5, 1: 10}  # ユーザー0→座席5、ユーザー1→座席10
+)
+
+# 優先ユーザーの例（貪欲法）
+assignments = optimizer.optimize_greedy(
+    user_ids=[0, 1, 2, 3, 4],
+    features_df=features_df,
+    priority_users=[0, 1]  # ユーザー0と1を優先的に割り当て
+)
 ```
 
 ## サポートされているモデル
@@ -399,6 +503,7 @@ A: 以下を試してください：
 - **numpy 1.26+**: 数値計算
 - **pandas 2.0+**: データ処理
 - **scikit-learn 1.3+**: 機械学習
+- **scipy 1.11+**: 最適化アルゴリズム（ハンガリアン法）
 - **joblib 1.3+**: モデルの保存・読み込み（安全性向上）
 - **PyYAML 6.0+**: 設定ファイル
 - **uv**: 高速パッケージマネージャー（オプション）
