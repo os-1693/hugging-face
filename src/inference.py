@@ -1,4 +1,20 @@
-"""推論スクリプト"""
+"""
+推論スクリプト
+
+学習済みモデルを使用してテキスト分類の推論を行います。
+
+主なクラス:
+    ModelInference: 単一または複数のテキストに対して推論を実行
+
+使用例:
+    >>> from inference import ModelInference
+    >>> model = ModelInference("./models/my-model")
+    >>> result = model.predict("This is great!")
+    >>> print(result["predicted_class"])
+
+コマンドライン実行:
+    python inference.py --model_path ./models/my-model --text "Sample text"
+"""
 
 import argparse
 import torch
@@ -10,7 +26,17 @@ logger = logging.getLogger(__name__)
 
 
 class ModelInference:
-    """モデル推論クラス"""
+    """
+    モデル推論クラス
+
+    学習済みモデルをロードし、テキストの分類予測を行います。
+    単一テキストとバッチ処理の両方に対応しています。
+
+    Attributes:
+        device (str): 使用するデバイス（'cuda' または 'cpu'）
+        tokenizer: テキストをトークンに変換するトークナイザー
+        model: 予測に使用する分類モデル
+    """
 
     def __init__(self, model_path: str, device: str = None):
         """

@@ -1,4 +1,20 @@
-"""データセット処理モジュール"""
+"""
+データセット処理モジュール
+
+Hugging Face Hubからデータセットを読み込み、前処理を行うための
+ユーティリティクラスを提供します。
+
+主なクラス:
+    DatasetLoader: Hugging Face Hubからデータセットを読み込む
+    CustomDatasetBuilder: ローカルファイルからデータセットを作成する
+
+使用例:
+    >>> from dataset import DatasetLoader
+    >>> from transformers import AutoTokenizer
+    >>> tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+    >>> loader = DatasetLoader("imdb", tokenizer)
+    >>> dataset = loader.load()
+"""
 
 from typing import Optional, Dict, Any
 from datasets import load_dataset, Dataset, DatasetDict
@@ -10,7 +26,18 @@ logger = logging.getLogger(__name__)
 
 
 class DatasetLoader:
-    """Hugging Face データセットのローダークラス"""
+    """
+    Hugging Face データセットのローダークラス
+
+    Hugging Face Hubからデータセットをダウンロードし、
+    トークナイズなどの前処理を行います。
+
+    Attributes:
+        dataset_name (str): データセット名
+        tokenizer (PreTrainedTokenizer): トークナイザー
+        max_length (int): 最大シーケンス長
+        subset (str): データセットのサブセット名
+    """
 
     def __init__(
         self,
@@ -32,7 +59,18 @@ class DatasetLoader:
         self.subset = subset
 
     def load(self) -> DatasetDict:
-        """データセットを読み込む"""
+        """
+        データセットを読み込む
+
+        Hugging Face Hubからデータセットをダウンロードします。
+        初回はインターネット接続が必要で、キャッシュに保存されます。
+
+        Returns:
+            DatasetDict: 読み込んだデータセット（train, test等を含む）
+
+        Raises:
+            ValueError: データセットが見つからない場合
+        """
         logger.info(f"Loading dataset: {self.dataset_name}")
 
         if self.subset:
