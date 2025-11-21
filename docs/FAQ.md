@@ -26,7 +26,7 @@ python --version
 python3 --version
 ```
 
-**推奨バージョン**: Python 3.8、3.9、3.10
+**推奨バージョン**: Python 3.9、3.10、3.11（PyTorch 2.0+の場合）
 
 ---
 
@@ -57,7 +57,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 # 3. それでもダメなら個別インストール
-pip install torch transformers datasets
+pip install torch transformers datasets evaluate
 ```
 
 **よくあるエラー**:
