@@ -351,16 +351,45 @@ training:
 
 **A:** 日本語モデルを使いましょう
 
+**推奨モデル一覧**:
+
+| モデル | 特徴 | 用途 |
+|--------|------|------|
+| `cl-tohoku/bert-base-japanese-v3` | 高精度、最新版 | 汎用 |
+| `cl-tohoku/bert-base-japanese-char-v3` | 文字ベース | 未知語に強い |
+| `studio-ousia/luke-japanese-base-lite` | エンティティ認識に強い | NER |
+| `rinna/japanese-roberta-base` | RoBERTaベース | 汎用 |
+
+**設定例**:
 ```yaml
 model:
-  name: "cl-tohoku/bert-base-japanese"
-  # または
-  name: "bert-base-japanese"
+  name: "cl-tohoku/bert-base-japanese-v3"
+  num_labels: 2
 ```
 
+**コード例**:
+```python
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
+model_name = "cl-tohoku/bert-base-japanese-v3"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
+
+# 日本語テキストで予測
+text = "この映画は素晴らしかった"
+inputs = tokenizer(text, return_tensors="pt")
+outputs = model(**inputs)
+```
+
+**日本語データセット例**:
+- `llm-book/livedoor-news-corpus`: ニュース分類
+- `shunk031/wrime`: 感情分析
+- `cl-nagoya/ner-wikipedia-dataset`: 固有表現認識
+
 **注意点**:
-- データセットも日本語のものを使う
-- トークナイザーも自動で日本語対応になります
+- 日本語モデルはトークナイザーが自動で日本語対応
+- MeCab/Sudachiなどの形態素解析器が必要な場合あり
+- `pip install fugashi unidic-lite` で対応可能
 
 ---
 
