@@ -39,21 +39,31 @@ class ModelBuilder:
         """
         logger.info(f"Building sequence classification model: {model_name}")
 
-        config = AutoConfig.from_pretrained(model_name)
+        try:
+            config = AutoConfig.from_pretrained(model_name)
+        except OSError as e:
+            logger.error(f"Model '{model_name}' not found")
+            logger.info("Available models: https://huggingface.co/models")
+            raise ValueError(f"Invalid model name: {model_name}") from e
+
         config.num_labels = num_labels
 
         if config_overrides:
             for key, value in config_overrides.items():
                 setattr(config, key, value)
 
-        if pretrained:
-            model = AutoModelForSequenceClassification.from_pretrained(
-                model_name,
-                config=config,
-                ignore_mismatched_sizes=True
-            )
-        else:
-            model = AutoModelForSequenceClassification.from_config(config)
+        try:
+            if pretrained:
+                model = AutoModelForSequenceClassification.from_pretrained(
+                    model_name,
+                    config=config,
+                    ignore_mismatched_sizes=True
+                )
+            else:
+                model = AutoModelForSequenceClassification.from_config(config)
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
 
         logger.info(f"Model built successfully with {num_labels} labels")
         return model

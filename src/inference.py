@@ -27,6 +27,10 @@ class ModelInference:
         self.model.to(self.device)
         self.model.eval()
 
+        # 推論最適化: キャッシュを有効化
+        if hasattr(self.model, "config"):
+            self.model.config.use_cache = True
+
     def predict(self, text: str) -> dict:
         """
         テキストの予測を行う

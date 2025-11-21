@@ -53,8 +53,21 @@ class DatasetLoader:
         Returns:
             トークナイズされたデータ
         """
-        # テキストカラム名はデータセットに応じて調整が必要
-        text_column = "text" if "text" in examples else "sentence"
+        # テキストカラムを自動検出
+        text_columns = ["text", "sentence", "content", "review", "description", "question"]
+        text_column = None
+        for col in text_columns:
+            if col in examples:
+                text_column = col
+                break
+
+        if text_column is None:
+            available_cols = list(examples.keys())
+            raise ValueError(
+                f"テキストカラムが見つかりません。"
+                f"期待されるカラム: {text_columns}, "
+                f"利用可能なカラム: {available_cols}"
+            )
 
         return self.tokenizer(
             examples[text_column],

@@ -27,7 +27,8 @@ try:
         AutoTokenizer,
         AutoModelForSequenceClassification,
         TrainingArguments,
-        Trainer
+        Trainer,
+        set_seed
     )
     from datasets import load_dataset
     import numpy as np
@@ -37,6 +38,9 @@ except ImportError as e:
     print(f"   以下のコマンドを実行してください:")
     print(f"   pip install -r requirements.txt")
     sys.exit(1)
+
+# 再現性のための乱数シード設定
+set_seed(42)
 
 # =============================================================================
 # ステップ2: 使用するデバイス（GPU or CPU）の確認
