@@ -39,21 +39,31 @@ class ModelBuilder:
         """
         logger.info(f"Building sequence classification model: {model_name}")
 
-        config = AutoConfig.from_pretrained(model_name)
+        try:
+            config = AutoConfig.from_pretrained(model_name)
+        except OSError as e:
+            logger.error(f"Model '{model_name}' not found")
+            logger.info("Available models: https://huggingface.co/models")
+            raise ValueError(f"Invalid model name: {model_name}") from e
+
         config.num_labels = num_labels
 
         if config_overrides:
             for key, value in config_overrides.items():
                 setattr(config, key, value)
 
-        if pretrained:
-            model = AutoModelForSequenceClassification.from_pretrained(
-                model_name,
-                config=config,
-                ignore_mismatched_sizes=True
-            )
-        else:
-            model = AutoModelForSequenceClassification.from_config(config)
+        try:
+            if pretrained:
+                model = AutoModelForSequenceClassification.from_pretrained(
+                    model_name,
+                    config=config,
+                    ignore_mismatched_sizes=True
+                )
+            else:
+                model = AutoModelForSequenceClassification.from_config(config)
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
 
         logger.info(f"Model built successfully with {num_labels} labels")
         return model
@@ -79,21 +89,31 @@ class ModelBuilder:
         """
         logger.info(f"Building token classification model: {model_name}")
 
-        config = AutoConfig.from_pretrained(model_name)
+        try:
+            config = AutoConfig.from_pretrained(model_name)
+        except OSError as e:
+            logger.error(f"Model '{model_name}' not found")
+            logger.info("Available models: https://huggingface.co/models")
+            raise ValueError(f"Invalid model name: {model_name}") from e
+
         config.num_labels = num_labels
 
         if config_overrides:
             for key, value in config_overrides.items():
                 setattr(config, key, value)
 
-        if pretrained:
-            model = AutoModelForTokenClassification.from_pretrained(
-                model_name,
-                config=config,
-                ignore_mismatched_sizes=True
-            )
-        else:
-            model = AutoModelForTokenClassification.from_config(config)
+        try:
+            if pretrained:
+                model = AutoModelForTokenClassification.from_pretrained(
+                    model_name,
+                    config=config,
+                    ignore_mismatched_sizes=True
+                )
+            else:
+                model = AutoModelForTokenClassification.from_config(config)
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
 
         logger.info("Token classification model built successfully")
         return model
@@ -117,19 +137,29 @@ class ModelBuilder:
         """
         logger.info(f"Building QA model: {model_name}")
 
-        config = AutoConfig.from_pretrained(model_name)
+        try:
+            config = AutoConfig.from_pretrained(model_name)
+        except OSError as e:
+            logger.error(f"Model '{model_name}' not found")
+            logger.info("Available models: https://huggingface.co/models")
+            raise ValueError(f"Invalid model name: {model_name}") from e
 
         if config_overrides:
             for key, value in config_overrides.items():
                 setattr(config, key, value)
 
-        if pretrained:
-            model = AutoModelForQuestionAnswering.from_pretrained(
-                model_name,
-                config=config
-            )
-        else:
-            model = AutoModelForQuestionAnswering.from_config(config)
+        try:
+            if pretrained:
+                model = AutoModelForQuestionAnswering.from_pretrained(
+                    model_name,
+                    config=config,
+                    ignore_mismatched_sizes=True
+                )
+            else:
+                model = AutoModelForQuestionAnswering.from_config(config)
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
 
         logger.info("QA model built successfully")
         return model
@@ -153,19 +183,28 @@ class ModelBuilder:
         """
         logger.info(f"Building Causal LM model: {model_name}")
 
-        config = AutoConfig.from_pretrained(model_name)
+        try:
+            config = AutoConfig.from_pretrained(model_name)
+        except OSError as e:
+            logger.error(f"Model '{model_name}' not found")
+            logger.info("Available models: https://huggingface.co/models")
+            raise ValueError(f"Invalid model name: {model_name}") from e
 
         if config_overrides:
             for key, value in config_overrides.items():
                 setattr(config, key, value)
 
-        if pretrained:
-            model = AutoModelForCausalLM.from_pretrained(
-                model_name,
-                config=config
-            )
-        else:
-            model = AutoModelForCausalLM.from_config(config)
+        try:
+            if pretrained:
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_name,
+                    config=config
+                )
+            else:
+                model = AutoModelForCausalLM.from_config(config)
+        except Exception as e:
+            logger.error(f"Failed to load model: {e}")
+            raise
 
         logger.info("Causal LM model built successfully")
         return model

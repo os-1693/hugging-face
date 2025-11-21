@@ -14,7 +14,7 @@ from transformers import (
     EarlyStoppingCallback,
     set_seed
 )
-from datasets import load_metric
+import evaluate
 import numpy as np
 
 from dataset import DatasetLoader
@@ -52,7 +52,7 @@ def compute_metrics_classification(eval_pred):
     Returns:
         メトリクス辞書
     """
-    metric = load_metric("accuracy")
+    metric = evaluate.load("accuracy")
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
     return metric.compute(predictions=predictions, references=labels)

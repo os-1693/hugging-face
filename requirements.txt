@@ -2,9 +2,9 @@
 
 # Core libraries
 torch>=2.0.0
-transformers>=4.35.0
-datasets>=2.14.0
-accelerate>=0.24.0
+transformers>=4.45.0
+datasets>=3.0.0
+accelerate>=1.0.0
 
 # Training utilities
 wandb>=0.15.0
