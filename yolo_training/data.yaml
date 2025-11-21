@@ -1,0 +1,9 @@
+# YOLO Training Dataset Configuration
+path: ./datasets
+train: images/train
+val: images/val
+
+# Classes
+names:
+  0: class1
+  # 1: class2  # 必要に応じて追加
