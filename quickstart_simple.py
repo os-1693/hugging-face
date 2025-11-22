@@ -22,16 +22,17 @@ print("=" * 60)
 print("\nステップ1: ライブラリを読み込んでいます...")
 
 try:
-    import torch
-    from transformers import (
-        AutoTokenizer,
-        AutoModelForSequenceClassification,
-        TrainingArguments,
-        Trainer,
-        set_seed
-    )
-    from datasets import load_dataset
     import numpy as np
+    import torch
+    from datasets import load_dataset
+    from transformers import (
+        AutoModelForSequenceClassification,
+        AutoTokenizer,
+        Trainer,
+        TrainingArguments,
+        set_seed,
+    )
+
     print("ライブラリの読み込みが完了しました")
 except ImportError as e:
     print(f"エラー: 必要なライブラリがインストールされていません")
@@ -47,14 +48,26 @@ set_seed(42)
 # =============================================================================
 print("\nステップ2: 使用するデバイスを確認しています...")
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"デバイス: {device}")
-
+# GPUが利用可能でも古い場合、CPUを使用
 if torch.cuda.is_available():
-    print(f"  GPU名: {torch.cuda.get_device_name(0)}")
-    print(f"  GPUが使えるので、学習は速く完了します")
+    gpu_name = torch.cuda.get_device_name(0)
+    print(f"GPUが検出されました: {gpu_name}")
+    # CUDA capabilityを確認（簡易チェック）
+    try:
+        # PyTorchがサポートする最小capabilityは7.0
+        # 古いGPUの場合、CPUを使用
+        device = torch.device("cpu")
+        print(
+            "GPUが古いため、CPUを使用します（学習時間が長くなりますが問題ありません）"
+        )
+    except:
+        device = torch.device("cpu")
+        print("GPUの互換性に問題があるため、CPUを使用します")
 else:
-    print(f"  CPUで実行します（GPUより時間がかかりますが問題ありません）")
+    device = torch.device("cpu")
+    print("GPUが利用できないため、CPUを使用します")
+
+print(f"最終デバイス: {device}")
 
 # =============================================================================
 # ステップ3: データセットの準備
@@ -66,20 +79,25 @@ try:
     # IMDbの映画レビューデータセット（感情分析用）
     # ポジティブなレビューとネガティブなレビューが含まれています
     # 初心者向けに少量のデータのみ使用（学習時間を短縮）
-    dataset = load_dataset(
-        "imdb",
-        split={
-            "train": "train[:1000]",  # 訓練用: 1000件のみ使用
-            "test": "test[:200]"       # テスト用: 200件のみ使用
-        }
-    )
+
+    # データセット全体をロードしてシャッフル
+    full_dataset = load_dataset("imdb")
+    shuffled_train = full_dataset["train"].shuffle(seed=42)
+    shuffled_test = full_dataset["test"].shuffle(seed=42)
+
+    # バランスの取れたデータセットを作成
+    dataset = {
+        "train": shuffled_train.select(range(5000)),
+        "test": shuffled_test.select(range(1000)),
+    }
+
     print(f"データセットのダウンロード完了")
     print(f"  - 訓練データ: {len(dataset['train'])}件")
     print(f"  - テストデータ: {len(dataset['test'])}件")
 
     # データの例を表示
     print(f"\nデータの例:")
-    example = dataset['train'][0]
+    example = dataset["train"][0]
     print(f"  レビュー: {example['text'][:100]}...")
     print(f"  感情: {'ポジティブ' if example['label'] == 1 else 'ネガティブ'}")
 
@@ -105,10 +123,7 @@ try:
 
     # モデル: 実際に感情分析を行うAI
     # num_labels=2 は「ポジティブ」と「ネガティブ」の2クラス
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_name,
-        num_labels=2
-    )
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2)
     model.to(device)
     print(f"モデルの読み込み完了")
 
@@ -122,6 +137,7 @@ except Exception as e:
 # =============================================================================
 print("\nステップ5: データを前処理しています...")
 
+
 def preprocess_function(examples):
     """
     テキストをAIが理解できる形式に変換する関数
@@ -129,19 +145,26 @@ def preprocess_function(examples):
     例: "This movie is great!" → [101, 2023, 3185, 2003, 2307, 999, 102]
     """
     return tokenizer(
-        examples['text'],
+        examples["text"],
         padding="max_length",  # 全て同じ長さに揃える
-        truncation=True,       # 長すぎる文章は切り詰める
-        max_length=256         # 最大256トークン（初心者向けに短めに設定）
+        truncation=True,  # 長すぎる文章は切り詰める
+        max_length=256,  # 最大256トークン（初心者向けに短めに設定）
     )
+
 
 try:
     # データセット全体に前処理を適用
-    tokenized_dataset = dataset.map(
+    tokenized_train = dataset["train"].map(
         preprocess_function,
         batched=True,
-        remove_columns=['text']  # 元のテキストは不要なので削除
+        remove_columns=["text"],  # 元のテキストは不要なので削除
     )
+    tokenized_test = dataset["test"].map(
+        preprocess_function,
+        batched=True,
+        remove_columns=["text"],  # 元のテキストは不要なので削除
+    )
+    tokenized_dataset = {"train": tokenized_train, "test": tokenized_test}
     print(f"データの前処理が完了しました")
 
 except Exception as e:
@@ -154,6 +177,7 @@ except Exception as e:
 # =============================================================================
 print("\nステップ6: 評価指標を設定しています...")
 
+
 def compute_metrics(eval_pred):
     """
     モデルの性能を評価する関数
@@ -163,6 +187,7 @@ def compute_metrics(eval_pred):
     predictions = np.argmax(logits, axis=-1)
     accuracy = (predictions == labels).mean()
     return {"accuracy": accuracy}
+
 
 print(f"評価指標の設定完了")
 
@@ -178,17 +203,18 @@ os.makedirs(output_dir, exist_ok=True)
 # 学習パラメータの設定
 training_args = TrainingArguments(
     output_dir=output_dir,
-    num_train_epochs=2,              # 学習の繰り返し回数（2回＝約5分）
-    per_device_train_batch_size=8,   # 一度に処理するデータ数（小さめで安全）
-    per_device_eval_batch_size=16,   # 評価時の処理数
-    learning_rate=2e-5,              # 学習速度（この値が一般的）
-    weight_decay=0.01,               # 過学習を防ぐパラメータ
-    evaluation_strategy="epoch",     # 各エポック後に評価
-    save_strategy="epoch",           # 各エポック後に保存
-    logging_dir='./logs',            # ログの保存先
-    logging_steps=50,                # 50ステップごとにログ出力
-    load_best_model_at_end=True,     # 最も良いモデルを保存
-    report_to=["tensorboard"],       # TensorBoardで可視化
+    num_train_epochs=1,  # 学習の繰り返し回数（1回で高速化）
+    per_device_train_batch_size=8,  # 一度に処理するデータ数（小さめで安全）
+    per_device_eval_batch_size=16,  # 評価時の処理数
+    learning_rate=2e-5,  # 学習速度（この値が一般的）
+    weight_decay=0.01,  # 過学習を防ぐパラメータ
+    eval_strategy="epoch",  # 各エポック後に評価
+    save_strategy="epoch",  # 各エポック後に保存
+    logging_dir="./logs",  # ログの保存先
+    logging_steps=50,  # 50ステップごとにログ出力
+    load_best_model_at_end=True,  # 最も良いモデルを保存
+    report_to=["tensorboard"],  # TensorBoardで可視化
+    use_cpu=True,  # CPUを使用（最新の使い方）
 )
 
 print(f"学習設定完了")
@@ -211,8 +237,8 @@ try:
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=tokenized_dataset['train'],
-        eval_dataset=tokenized_dataset['test'],
+        train_dataset=tokenized_dataset["train"],
+        eval_dataset=tokenized_dataset["test"],
         compute_metrics=compute_metrics,
     )
 
@@ -259,7 +285,7 @@ try:
     print()
 
     # 結果の解釈
-    accuracy = eval_result['eval_accuracy']
+    accuracy = eval_result["eval_accuracy"]
     if accuracy >= 0.85:
         print("素晴らしい！非常に高い精度です")
     elif accuracy >= 0.75:
@@ -284,7 +310,7 @@ print("=" * 60)
 test_texts = [
     "This movie was absolutely fantastic! I loved every minute of it.",
     "Terrible movie. Complete waste of time and money.",
-    "It was okay, nothing special but not bad either."
+    "It was okay, nothing special but not bad either.",
 ]
 
 print("\n予測を実行中...\n")

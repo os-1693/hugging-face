@@ -42,7 +42,7 @@ print("AIを起動しています...")
 
 try:
     import torch
-    from transformers import AutoTokenizer, AutoModelForSequenceClassification
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
 except ImportError:
     print("エラー: 必要なライブラリがインストールされていません")
     print("以下のコマンドを実行してください:")
@@ -55,7 +55,7 @@ except ImportError:
 print("モデルを読み込んでいます...")
 
 try:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")  # CPUを使用
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
     model.to(device)
@@ -66,6 +66,7 @@ except Exception as e:
     print(f"エラー: モデルの読み込みに失敗しました")
     print(f"エラー詳細: {e}")
     sys.exit(1)
+
 
 # =============================================================================
 # 予測関数
@@ -93,11 +94,7 @@ def predict_sentiment(text):
     """
     # トークナイズ
     inputs = tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        max_length=256,
-        padding=True
+        text, return_tensors="pt", truncation=True, max_length=256, padding=True
     )
     inputs = {key: value.to(device) for key, value in inputs.items()}
 
@@ -117,6 +114,7 @@ def predict_sentiment(text):
         confidence = negative_prob
 
     return sentiment, confidence, positive_prob, negative_prob
+
 
 # =============================================================================
 # サンプル予測
@@ -138,7 +136,7 @@ for i, text in enumerate(sample_texts, 1):
     sentiment, confidence, pos_prob, neg_prob = predict_sentiment(text)
 
     print(f"サンプル {i}:")
-    print(f"  入力: \"{text}\"")
+    print(f'  入力: "{text}"')
     print(f"  結果: {sentiment} (確信度: {confidence:.1%})")
     print(f"  詳細: ネガティブ {neg_prob:.1%} | ポジティブ {pos_prob:.1%}")
     print()
@@ -162,7 +160,7 @@ while True:
         user_input = input("あなたのテキスト: ").strip()
 
         # 終了コマンドのチェック
-        if user_input.lower() in ['quit', 'exit', 'q', '終了']:
+        if user_input.lower() in ["quit", "exit", "q", "終了"]:
             print()
             print("ありがとうございました")
             break

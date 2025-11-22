@@ -17,9 +17,10 @@
 """
 
 import argparse
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import logging
+
+import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ class ModelInference:
             model_path: モデルのパス
             device: 使用するデバイス（cuda/cpu）
         """
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device or "cpu"  # CPUを使用
         logger.info(f"Loading model from {model_path}")
         logger.info(f"Using device: {self.device}")
 
@@ -69,11 +70,7 @@ class ModelInference:
         """
         # トークナイズ
         inputs = self.tokenizer(
-            text,
-            return_tensors="pt",
-            truncation=True,
-            max_length=512,
-            padding=True
+            text, return_tensors="pt", truncation=True, max_length=512, padding=True
         )
 
         # デバイスに転送
@@ -92,7 +89,7 @@ class ModelInference:
         return {
             "predicted_class": predicted_class,
             "confidence": confidence,
-            "probabilities": probabilities[0].cpu().numpy().tolist()
+            "probabilities": probabilities[0].cpu().numpy().tolist(),
         }
 
     def predict_batch(self, texts: list) -> list:
@@ -107,11 +104,7 @@ class ModelInference:
         """
         # トークナイズ
         inputs = self.tokenizer(
-            texts,
-            return_tensors="pt",
-            truncation=True,
-            max_length=512,
-            padding=True
+            texts, return_tensors="pt", truncation=True, max_length=512, padding=True
         )
 
         # デバイスに転送
@@ -125,44 +118,34 @@ class ModelInference:
         logits = outputs.logits
         probabilities = torch.softmax(logits, dim=-1)
         predicted_classes = torch.argmax(probabilities, dim=-1).cpu().numpy().tolist()
-        confidences = [probabilities[i][pred].item() for i, pred in enumerate(predicted_classes)]
+        confidences = [
+            probabilities[i][pred].item() for i, pred in enumerate(predicted_classes)
+        ]
 
         results = []
-        for i, (pred_class, confidence) in enumerate(zip(predicted_classes, confidences)):
-            results.append({
-                "text": texts[i],
-                "predicted_class": pred_class,
-                "confidence": confidence,
-                "probabilities": probabilities[i].cpu().numpy().tolist()
-            })
+        for i, (pred_class, confidence) in enumerate(
+            zip(predicted_classes, confidences)
+        ):
+            results.append(
+                {
+                    "text": texts[i],
+                    "predicted_class": pred_class,
+                    "confidence": confidence,
+                    "probabilities": probabilities[i].cpu().numpy().tolist(),
+                }
+            )
 
         return results
 
 
 def main():
     """メイン関数"""
-    parser = argparse.ArgumentParser(description='モデル推論')
+    parser = argparse.ArgumentParser(description="モデル推論")
+    parser.add_argument("--model_path", type=str, required=True, help="モデルのパス")
+    parser.add_argument("--text", type=str, help="推論するテキスト")
+    parser.add_argument("--texts", nargs="+", help="推論する複数のテキスト")
     parser.add_argument(
-        '--model_path',
-        type=str,
-        required=True,
-        help='モデルのパス'
-    )
-    parser.add_argument(
-        '--text',
-        type=str,
-        help='推論するテキスト'
-    )
-    parser.add_argument(
-        '--texts',
-        nargs='+',
-        help='推論する複数のテキスト'
-    )
-    parser.add_argument(
-        '--device',
-        type=str,
-        default=None,
-        help='使用するデバイス（cuda/cpu）'
+        "--device", type=str, default=None, help="使用するデバイス（cuda/cpu）"
     )
 
     args = parser.parse_args()
@@ -190,5 +173,5 @@ def main():
         logger.error("--text または --texts を指定してください")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
