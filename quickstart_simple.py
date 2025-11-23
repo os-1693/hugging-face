@@ -213,7 +213,7 @@ training_args = TrainingArguments(
     logging_dir="./logs",  # ログの保存先
     logging_steps=50,  # 50ステップごとにログ出力
     load_best_model_at_end=True,  # 最も良いモデルを保存
-    report_to=["tensorboard"],  # TensorBoardで可視化
+    report_to=[],  # レポート無効化
     use_cpu=True,  # CPUを使用（最新の使い方）
 )
 

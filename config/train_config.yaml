@@ -38,7 +38,7 @@ training:
   logging_steps: 100  # ログ記録の頻度
   save_total_limit: 3  # 保存するチェックポイントの最大数
   fp16: true  # 混合精度学習を使用するか（GPUが利用可能な場合）
-  report_to: ["tensorboard"]  # レポート先: tensorboard, wandb など
+  report_to: []  # レポート先: 無効化
   early_stopping: true  # 早期停止を使用するか
   early_stopping_patience: 3  # 早期停止の忍耐力
 
