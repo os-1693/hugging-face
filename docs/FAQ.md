@@ -2,7 +2,7 @@
 
 AI学習初心者の方からよく寄せられる質問と回答をまとめました。
 
-## 📋 目次
+## 目次
 
 1. [環境・インストール](#環境インストール)
 2. [学習に関する質問](#学習に関する質問)
@@ -481,7 +481,7 @@ tokenizer.push_to_hub('your-username/model-name')
 
 ---
 
-## 📚 さらに学ぶには
+## さらに学ぶには
 
 - [Hugging Face Course（無料）](https://huggingface.co/learn/nlp-course)
 - [TensorFlow チュートリアル](https://www.tensorflow.org/tutorials)
