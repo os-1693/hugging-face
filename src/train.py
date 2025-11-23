@@ -158,6 +158,7 @@ def train(config: Dict[str, Any]):
         args=training_args,
         train_dataset=processed_dataset["train"],
         eval_dataset=processed_dataset.get("validation", processed_dataset.get("test")),
+        processing_class=tokenizer,
         compute_metrics=compute_metrics_classification,
         callbacks=callbacks,
     )

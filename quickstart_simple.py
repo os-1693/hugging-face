@@ -239,6 +239,7 @@ try:
         args=training_args,
         train_dataset=tokenized_dataset["train"],
         eval_dataset=tokenized_dataset["test"],
+        processing_class=tokenizer,
         compute_metrics=compute_metrics,
     )
 
