@@ -28,7 +28,7 @@ ENV/
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb
+# *.ipynb  # 管理対象にするためコメントアウト
 
 # モデルとデータ
 models/*
